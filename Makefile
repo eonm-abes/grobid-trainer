@@ -2,6 +2,14 @@
 include .env
 export $(shell sed 's/=.*//' .env)
 
+dockerize:
+	git pull &&	git submodule update --init --recursive
+	rm ./grobid/Dockerfile.tmp && cat ./grobid/Dockerfile ./Dockerfile >> ./grobid/Dockerfile.tmp
+	cp Makefile grobid/
+	cp .env grobid/
+	cp ./xslt grobid/
+	docker build grobid/ -f grobid/Dockerfile.tmp -t grobid-trainer && docker run -it grobid-trainer bash
+
 mkdir:
 	mkdir -p $$INPUT_DIR
 	mkdir -p $$OUTPUT_DIR

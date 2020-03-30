@@ -2,6 +2,8 @@
 
 # Grobid Trainer
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 </div>
 
 Grobid Trainer est un conteneur Docker basé sur celui de [Grobid](https://hub.docker.com/r/lfoppiano/grobid/) destiné à faciliter l'entraînement des modèles de [Grobid](https://github.com/kermitt2/grobid).

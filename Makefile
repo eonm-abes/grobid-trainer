@@ -3,7 +3,7 @@ include .env
 export $(shell sed 's/=.*//' .env)
 
 build: mkdir
-	git pull &&	git submodule update --init --recursive
+	git pull && git submodule update --init --recursive
 	rm -f ./grobid/Dockerfile.tmp && cat ./grobid/Dockerfile ./Dockerfile >> ./grobid/Dockerfile.tmp
 	cp Makefile grobid/
 	cp .env grobid/

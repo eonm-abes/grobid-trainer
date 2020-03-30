@@ -2,13 +2,14 @@
 include .env
 export $(shell sed 's/=.*//' .env)
 
-dockerize:
+dockerize: mkdir
 	git pull &&	git submodule update --init --recursive
-	rm ./grobid/Dockerfile.tmp && cat ./grobid/Dockerfile ./Dockerfile >> ./grobid/Dockerfile.tmp
+	rm -f ./grobid/Dockerfile.tmp && cat ./grobid/Dockerfile ./Dockerfile >> ./grobid/Dockerfile.tmp
 	cp Makefile grobid/
 	cp .env grobid/
-	cp ./xslt grobid/
-	docker build grobid/ -f grobid/Dockerfile.tmp -t grobid-trainer && docker run -it grobid-trainer bash
+	cp -r ./xslt grobid/
+	cp bash.bashrc grobid/
+	docker build grobid/ -f grobid/Dockerfile.tmp -t grobid-trainer && docker run -v "$$(pwd)"/$$INPUT_DIR:/opt/grobid/$$INPUT_DIR -v "$$(pwd)"/$$OUTPUT_DIR:/opt/grobid/$$OUTPUT_DIR -it grobid-trainer bash
 
 mkdir:
 	mkdir -p $$INPUT_DIR
@@ -21,17 +22,17 @@ prepare: populate
 	# Take first page of each PDF in the input dir.
 	for i in $$INPUT_DIR/*.pdf ; do pdftk $$i cat 1 output tmp.pdf && mv tmp.pdf $$i ; done
 
-train: populate clear
-	java -Xmx4G -jar $$GROBID_PATH/grobid-core/build/libs/grobid-core-0.6.0-SNAPSHOT-onejar.jar -gH $$GROBID_PATH/grobid-home/ -dIn $$INPUT_DIR -dOut $$OUTPUT_DIR -exe createTraining
+train: prepare populate clear
+	java -Xmx4G -jar grobid-core-onejar.jar -gH grobid-home/ -dIn $$INPUT_DIR -dOut $$OUTPUT_DIR -exe createTraining
 
 autocorrect-segmentation:
-	for i in $$OUTPUT_DIR/*.training.segmentation.tei.xml ; do xsltproc --novalid xslt/front.xslt $$i > temp.xsl 2> /dev/null && mv temp.xsl $$i ; done
+	for i in $$OUTPUT_DIR/*.training.segmentation.tei.xml ; do xsltproc --novalid xslt/front.xslt $$i > temp.xsl 2> /dev/null && mv temp.xsl $$i && rm -f temp.xsl ; done
 
 train-segmentation: train autocorrect-segmentation
 
 clear:
-	rm -r $$OUTPUT_DIR/*
+	rm -f -r $$OUTPUT_DIR/*
 
 reset:
-	rm -r $$OUTPUT_DIR
-	rm -r $$INPUT_DIR
+	rm -f -r $$OUTPUT_DIR
+	rm -f -r $$INPUT_DIR

@@ -2,29 +2,31 @@
 include .env
 export $(shell sed 's/=.*//' .env)
 
-build: mkdir
-	git pull && git submodule update --init --recursive
-	rm -f ./grobid/Dockerfile.tmp && cat ./grobid/Dockerfile ./Dockerfile >> ./grobid/Dockerfile.tmp
-	cp Makefile grobid/
-	cp .env grobid/
-	cp -r ./xslt grobid/
-	cp bash.bashrc grobid/
+# Image builder
 
-run: build
-	docker build grobid/ -f grobid/Dockerfile.tmp -t grobid-trainer && docker run -v "$$(pwd)"/$$INPUT_DIR:/opt/grobid/$$INPUT_DIR -v "$$(pwd)"/$$OUTPUT_DIR:/opt/grobid/$$OUTPUT_DIR -it grobid-trainer bash
+build: 
+	docker build . -t grobid-trainer:latest
+
+run: build mkdir
+	docker run -v "$$(pwd)"/$$INPUT_DIR:/opt/grobid/$$INPUT_DIR -v "$$(pwd)"/$$OUTPUT_DIR:/opt/grobid/$$OUTPUT_DIR -it grobid-trainer bash
 
 mkdir:
 	mkdir -p $$INPUT_DIR
 	mkdir -p $$OUTPUT_DIR
 
-populate: mkdir
-	# Copy PDF files into input dir.
+#------------------------------------------------------------------------------
+# GROBID trainer
+#------------------------------------------------------------------------------
 
-prepare: populate
-	# Take first page of each PDF in the input dir.
+# Copy PDF files into input dir.
+populate-pdf: mkdir
+
+# Take first page of each PDF in the input dir
+prepare: populate-pdf
 	for i in $$INPUT_DIR/*.pdf ; do pdftk $$i cat 1 output tmp.pdf && mv tmp.pdf $$i ; done
 
-train: prepare populate clear
+# Call grobid  command
+train: prepare populate-pdf clear
 	java -Xmx4G -jar grobid-core-onejar.jar -gH grobid-home/ -dIn $$INPUT_DIR -dOut $$OUTPUT_DIR -exe createTraining
 
 autocorrect-segmentation:
